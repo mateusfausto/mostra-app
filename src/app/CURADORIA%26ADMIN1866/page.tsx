@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
-import { AdminGuard } from '@/components/AdminGuard'
 import DashboardMetricas from '@/components/DashboardMetricas'
 import { Button, Input, StatusBadge, Toast } from '@/components/ui'
 import type { Anuncio } from '@/types/database'
@@ -255,9 +254,5 @@ function AdminPanelContent() {
 }
 
 export default function AdminPage() {
-  return (
-    <AdminGuard>
-      <AdminPanelContent />
-    </AdminGuard>
-  )
+  return <AdminPanelContent />
 }

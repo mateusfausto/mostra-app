@@ -1,9 +1,12 @@
 -- =====================================================
--- Mostra! — Schema do Banco de Dados (Supabase)
--- Execute no SQL Editor do Supabase Dashboard
+-- Mostra! — Schema do Banco de Dados (Neon/PostgreSQL)
+-- Execute no console do Neon: https://console.neon.tech
 -- =====================================================
 
--- 1. Criar tabela de anúncios
+-- 1. Habilitar extensão pgcrypto para criptografia
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 2. Criar tabela de anúncios
 CREATE TABLE IF NOT EXISTS public.anuncios (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -17,20 +20,46 @@ CREATE TABLE IF NOT EXISTS public.anuncios (
                       CHECK (status IN ('pendente', 'ativo', 'vendido', 'removido')),
   data_expiracao      TIMESTAMPTZ,
   tamanho             TEXT[] NOT NULL DEFAULT '{}',
-  regras_aceitas      BOOLEAN NOT NULL DEFAULT false,
-  medida_busto        NUMERIC(5, 1),
-  medida_cintura      NUMERIC(5, 1),
-  medida_quadril      NUMERIC(5, 1),
-  medida_comprimento  NUMERIC(5, 1)
+  regras_aceitas      BOOLEAN NOT NULL DEFAULT false
 );
 
--- 2. Índices para performance
+-- 2. Funções de Criptografia do WhatsApp
+-- Chave de criptografia: altere para uma chave segura em produção
+CREATE OR REPLACE FUNCTION encrypt_whatsapp(phone TEXT, key TEXT DEFAULT 'default-key-change-in-prod')
+RETURNS TEXT AS $$
+BEGIN
+  RETURN encode(
+    encrypt(
+      convert_to(phone, 'UTF8'),
+      convert_to(key, 'UTF8'),
+      'aes'
+    ),
+    'base64'
+  );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION decrypt_whatsapp(encrypted TEXT, key TEXT DEFAULT 'default-key-change-in-prod')
+RETURNS TEXT AS $$
+BEGIN
+  RETURN convert_from(
+    decrypt(
+      decode(encrypted, 'base64'),
+      convert_to(key, 'UTF8'),
+      'aes'
+    ),
+    'UTF8'
+  );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- 3. Índices para performance
 CREATE INDEX IF NOT EXISTS idx_anuncios_status ON public.anuncios (status);
 CREATE INDEX IF NOT EXISTS idx_anuncios_categoria ON public.anuncios (categoria);
 CREATE INDEX IF NOT EXISTS idx_anuncios_expiracao ON public.anuncios (data_expiracao);
 CREATE INDEX IF NOT EXISTS idx_anuncios_created ON public.anuncios (created_at DESC);
 
--- 3. Row Level Security (RLS)
+-- 4. Row Level Security (RLS)
 ALTER TABLE public.anuncios ENABLE ROW LEVEL SECURITY;
 
 -- Política: qualquer pessoa pode ler anúncios ativos não expirados
@@ -51,29 +80,31 @@ CREATE POLICY "Qualquer um pode criar anúncios"
 -- Política: service_role (backend) tem acesso total
 -- (as API Routes do Next.js usam a service_role key via ADMIN_PASSWORD)
 
--- 4. Storage bucket para fotos
--- Execute manualmente no Supabase Dashboard > Storage > New Bucket
--- Nome: fotos
--- Opção: Public bucket ✓
+-- 5. Storage bucket para fotos (Neon não tem storage, use S3/Cloudinary)
+-- Para fotos, recomenda-se usar: Cloudinary, AWS S3, Vercel Blob, etc
 
--- Política de storage (execute após criar o bucket)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('fotos', 'fotos', true)
-ON CONFLICT (id) DO NOTHING;
-
-CREATE POLICY "Upload público de fotos"
-  ON storage.objects
-  FOR INSERT
-  WITH CHECK (bucket_id = 'fotos');
-
-CREATE POLICY "Leitura pública de fotos"
-  ON storage.objects
-  FOR SELECT
-  USING (bucket_id = 'fotos');
-
--- 5. (Opcional) Função para expirar anúncios automaticamente via pg_cron
--- Requer extensão pg_cron habilitada no Supabase
+-- 6. (Opcional) Função para expirar anúncios automaticamente via pg_cron
+-- Requer extensão pg_cron habilitada no Neon
 -- CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- SELECT cron.schedule('expirar-anuncios', '0 0 * * *',
 --   $$UPDATE public.anuncios SET status = 'removido'
 --     WHERE status = 'ativo' AND data_expiracao < now()$$);
+
+-- =====================================================
+-- EXEMPLOS DE USO (no backend/Next.js)
+-- =====================================================
+
+-- Criptografar ao inserir:
+-- INSERT INTO anuncios (vendedor_whatsapp, ...)
+-- VALUES (encrypt_whatsapp('5511999999999'), ...);
+
+-- Descriptografar ao ler:
+-- SELECT id, decrypt_whatsapp(vendedor_whatsapp) as whatsapp, ... 
+-- FROM anuncios WHERE status = 'ativo';
+
+-- =====================================================
+-- IMPORTANTE: ALTERAR CHAVE DE CRIPTOGRAFIA EM PRODUÇÃO
+-- =====================================================
+-- Em produção, use uma variável de ambiente segura:
+-- SET app.encryption_key = 'sua-chave-segura-aqui';
+-- Depois atualize as funções para usar current_setting('app.encryption_key');
