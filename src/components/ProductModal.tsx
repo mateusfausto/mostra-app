@@ -8,6 +8,11 @@ const catLabel: Record<string, string> = {
   casaco: 'Casaco', saia: 'Saia', conjunto: 'Conjunto', acessorio: 'Acessório',
 }
 
+function isVideo(url: string): boolean {
+  const ext = url.toLowerCase().split('?')[0].split('.').pop()
+  return ext === 'mp4' || ext === 'webm' || ext === 'mov' || ext === 'avi'
+}
+
 function formatMoney(v: number) {
   return v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 }
@@ -45,7 +50,7 @@ export default function ProductModal({ anuncio, onClose }: Props) {
   const msg = encodeURIComponent(`Olá, vi seu *${anuncio?.titulo}* na vitrine e quero comprar! 😍`)
   const waLink = `https://wa.me/${phone}?text=${msg}`
 
-  const temTamanho = anuncio?.tamanho && anuncio.tamanho.length > 0
+  const temTamanho = anuncio?.tamanho && anuncio.tamanho.length > 0 // works for string too
 
   function toggleFavorite() {
     if (!anuncio) return
@@ -109,17 +114,25 @@ export default function ProductModal({ anuncio, onClose }: Props) {
         <div className="px-5 pb-8">
           {/* Gallery com Carrossel */}
           <div className="relative aspect-[4/5] rounded-[2px] overflow-hidden bg-warm mt-3 mb-4">
-            <Image
-              src={currentFoto}
-              alt={anuncio.titulo}
-              fill
-              sizes="480px"
-              className="object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=600&q=80'
-              }}
-            />
+            {isVideo(currentFoto) ? (
+              <video
+                src={currentFoto}
+                controls
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={currentFoto}
+                alt={anuncio.titulo}
+                fill
+                sizes="480px"
+                className="object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=600&q=80'
+                }}
+              />
+            )}
             
             {fotos.length > 1 && (
               <>
@@ -158,8 +171,11 @@ export default function ProductModal({ anuncio, onClose }: Props) {
           <h2 className="font-cormorant text-[26px] font-light leading-tight text-ink mb-3">
             {anuncio.titulo}
           </h2>
-          <p className="font-dm text-2xl font-medium text-ink mb-4">
+          <p className="font-dm text-2xl font-medium text-ink mb-1">
             R$ {formatMoney(anuncio.preco)}
+          </p>
+          <p className="font-dm text-xs text-muted mb-4">
+            {anuncio.cidade}, {anuncio.estado}
           </p>
 
           {anuncio.descricao && (
@@ -171,13 +187,11 @@ export default function ProductModal({ anuncio, onClose }: Props) {
           {/* Tamanho */}
           {temTamanho && (
             <div className="bg-cream rounded-[2px] p-4 mb-5">
-              <p className="font-dm text-[10px] tracking-widest uppercase text-muted mb-2">Disponível em</p>
+              <p className="font-dm text-[10px] tracking-widest uppercase text-muted mb-2">Tamanho</p>
               <div className="flex gap-2">
-                {anuncio.tamanho.map(tam => (
-                  <span key={tam} className="inline-flex items-center justify-center w-8 h-8 bg-gold text-ink font-dm font-medium text-sm rounded">
-                    {tam}
-                  </span>
-                ))}
+                <span className="inline-flex items-center justify-center px-3 h-8 bg-gold text-ink font-dm font-medium text-sm rounded">
+                  {anuncio.tamanho}
+                </span>
               </div>
             </div>
           )}

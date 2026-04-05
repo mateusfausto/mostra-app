@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
+import ProductModal from '@/components/ProductModal'
 import DashboardMetricas from '@/components/DashboardMetricas'
 import { Button, Input, StatusBadge, Toast } from '@/components/ui'
 import type { Anuncio } from '@/types/database'
@@ -34,6 +35,7 @@ function AdminPanelContent() {
   const [loading, setLoading] = useState(false)
   const [counts, setCounts] = useState({ pendente: 0, ativo: 0, vendido: 0 })
   const [toast, setToast] = useState({ visible: false, msg: '' })
+  const [selectedAnuncio, setSelectedAnuncio] = useState<Anuncio | null>(null)
 
   function showToast(msg: string) {
     setToast({ visible: true, msg })
@@ -170,36 +172,50 @@ function AdminPanelContent() {
         ) : (
           <div className="space-y-3">
             {anuncios.map(a => (
-              <div key={a.id} className="bg-white rounded-[2px] p-4 shadow-sm flex gap-3">
-                <div className="relative w-[70px] h-[70px] flex-shrink-0 rounded-[2px] overflow-hidden bg-warm">
-                  {a.fotos?.[0] && (
-                    <Image src={a.fotos[0]} alt={a.titulo} fill className="object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                  )}
+              <div key={a.id} className="bg-white rounded-[2px] p-4 shadow-sm">
+                <div className="flex gap-3 mb-3">
+                  <div className="relative w-[70px] h-[70px] flex-shrink-0 rounded-[2px] overflow-hidden bg-warm">
+                    {a.fotos?.[0] && (
+                      <Image src={a.fotos[0]} alt={a.titulo} fill className="object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-dm text-[14px] font-medium truncate">{a.titulo}</p>
+                    <p className="font-dm text-[11px] text-muted mt-0.5">
+                      R$ {formatMoney(a.preco)} · {catLabel[a.categoria] ?? a.categoria}
+                    </p>
+                    <p className="font-dm text-[11px] text-muted mt-1">
+                      <StatusBadge status={a.status} />
+                      {' '}
+                      {a.data_expiracao
+                        ? <span className="text-[10px]">Expira em {daysLeft(a.data_expiracao)}</span>
+                        : <span className="text-[10px]">{new Date(a.created_at).toLocaleDateString('pt-BR')}</span>
+                      }
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-dm text-[14px] font-medium truncate">{a.titulo}</p>
-                  <p className="font-dm text-[11px] text-muted mt-0.5 mb-2">
-                    R$ {formatMoney(a.preco)} · {catLabel[a.categoria] ?? a.categoria}
-                    <br />
-                    <StatusBadge status={a.status} />
-                    {' '}
-                    {a.data_expiracao
-                      ? <span className="text-[10px]">Expira em {daysLeft(a.data_expiracao)}</span>
-                      : <span className="text-[10px]">{new Date(a.created_at).toLocaleDateString('pt-BR')}</span>
-                    }
-                  </p>
-                  {a.vendedor_whatsapp && (
-                    <a href={`https://wa.me/${a.vendedor_whatsapp.replace(/\D/g, '')}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="font-dm text-[10px] text-[#25D366] mb-2 flex items-center gap-1 hover:text-[#20bd5a] transition-colors">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.89 21 3 13.11 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-                      </svg>
-                      {a.vendedor_whatsapp}
-                    </a>
-                  )}
-                  <div className="flex gap-1.5">
+
+                {a.vendedor_whatsapp && (
+                  <a href={`https://wa.me/${a.vendedor_whatsapp.replace(/\D/g, '')}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="font-dm text-[10px] text-[#25D366] inline-flex items-center gap-1 hover:text-[#20bd5a] transition-colors mb-3">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.89 21 3 13.11 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                    </svg>
+                    {a.vendedor_whatsapp}
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedAnuncio(a)}
+                  style={{ display: 'block', width: '100%', padding: '10px 0', marginBottom: '10px', backgroundColor: 'rgba(201,169,110,0.2)', color: '#C9A96E', border: '1px solid rgba(201,169,110,0.3)', borderRadius: '2px', fontSize: '11px', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer' }}
+                >
+                  👁 VER DETALHES
+                </button>
+
+                <div className="flex gap-1.5">
                     {tab === 'pendente' && (
                       <>
                         <button onClick={() => action(a.id, 'aprovar')}
@@ -241,12 +257,12 @@ function AdminPanelContent() {
                       </button>
                     )}
                   </div>
-                </div>
               </div>
             ))}
           </div>
         )}
       </main>
+      <ProductModal anuncio={selectedAnuncio} onClose={() => setSelectedAnuncio(null)} />
       <BottomNav />
       <Toast message={toast.msg} visible={toast.visible} />
     </>

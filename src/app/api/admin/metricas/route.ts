@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAnuncios } from '@/lib/database'
+import { getAnuncios } from '@/lib/db'
 
 function checkAdmin(request: Request) {
   const auth = request.headers.get('x-admin-token')

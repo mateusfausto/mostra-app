@@ -1,32 +1,56 @@
--- =====================================================
--- Mostra! — Schema do Banco de Dados (Neon/PostgreSQL)
--- Execute no console do Neon: https://console.neon.tech
--- =====================================================
+-- ============================================
+-- Schema do banco de dados - Mostra App
+-- PostgreSQL / Neon
+-- ============================================
+-- Execute este SQL no console do Neon para criar a tabela
 
--- 1. Habilitar extensão pgcrypto para criptografia
+-- Extensões
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2. Criar tabela de anúncios
-CREATE TABLE IF NOT EXISTS public.anuncios (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  vendedor_whatsapp   TEXT NOT NULL,
-  titulo              TEXT NOT NULL,
-  descricao           TEXT,
-  preco               NUMERIC(10, 2) NOT NULL,
-  fotos               TEXT[] NOT NULL DEFAULT '{}',
-  categoria           TEXT NOT NULL,
-  status              TEXT NOT NULL DEFAULT 'pendente'
-                      CHECK (status IN ('pendente', 'ativo', 'vendido', 'removido')),
-  data_expiracao      TIMESTAMPTZ,
-  tamanho             TEXT[] NOT NULL DEFAULT '{}',
-  regras_aceitas      BOOLEAN NOT NULL DEFAULT false
+-- Tabela principal de anúncios
+CREATE TABLE IF NOT EXISTS anuncios (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  vendedor_whatsapp TEXT NOT NULL,  -- armazenado criptografado via encrypt_whatsapp()
+  titulo          TEXT NOT NULL,
+  descricao       TEXT,
+  preco           NUMERIC(10,2) NOT NULL,
+  fotos           TEXT[] NOT NULL DEFAULT '{}',
+  categoria       TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pendente' 
+                    CHECK (status IN ('pendente', 'ativo', 'vendido', 'removido')),
+  data_expiracao  TIMESTAMPTZ,
+  tamanho         TEXT NOT NULL DEFAULT '',
+  regras_aceitas  BOOLEAN NOT NULL DEFAULT false,
+  cidade          TEXT NOT NULL,
+  estado          TEXT NOT NULL
 );
 
--- 2. Funções de Criptografia do WhatsApp
--- Chave de criptografia: altere para uma chave segura em produção
-CREATE OR REPLACE FUNCTION encrypt_whatsapp(phone TEXT, key TEXT DEFAULT 'default-key-change-in-prod')
-RETURNS TEXT AS $$
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_anuncios_status ON anuncios(status);
+CREATE INDEX IF NOT EXISTS idx_anuncios_categoria ON anuncios(categoria);
+CREATE INDEX IF NOT EXISTS idx_anuncios_created_at ON anuncios(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_anuncios_cidade_estado ON anuncios(cidade, estado);
+
+-- Comentários
+COMMENT ON TABLE anuncios IS 'Anúncios de roupas do Mostra App';
+COMMENT ON COLUMN anuncios.tamanho IS 'Tamanho único: PP, P, M, G, GG, XG, 36, 38, 40, 42, 44, 46';
+COMMENT ON COLUMN anuncios.status IS 'pendente → ativo (aprovado) → vendido | removido';
+COMMENT ON COLUMN anuncios.fotos IS 'Array de URLs (base64 data URIs ou URLs externas)';
+COMMENT ON COLUMN anuncios.vendedor_whatsapp IS 'Telefone criptografado com pgcrypto (AES). Use encrypt_whatsapp / decrypt_whatsapp.';
+COMMENT ON COLUMN anuncios.estado IS 'UF com 2 letras maiúsculas: SP, RJ, MG, etc.';
+
+-- ============================================
+-- Funções de criptografia do WhatsApp
+-- ============================================
+-- ⚠️  Troque 'mostra-secret-key-change-me' por uma chave forte em produção!
+--     Ideal: defina via variável de ambiente e use current_setting().
+
+CREATE OR REPLACE FUNCTION encrypt_whatsapp(
+  phone TEXT,
+  key TEXT DEFAULT 'mostra-secret-key-change-me'
+) RETURNS TEXT AS $$
 BEGIN
   RETURN encode(
     encrypt(
@@ -39,8 +63,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION decrypt_whatsapp(encrypted TEXT, key TEXT DEFAULT 'default-key-change-in-prod')
-RETURNS TEXT AS $$
+CREATE OR REPLACE FUNCTION decrypt_whatsapp(
+  encrypted TEXT,
+  key TEXT DEFAULT 'mostra-secret-key-change-me'
+) RETURNS TEXT AS $$
 BEGIN
   RETURN convert_from(
     decrypt(
@@ -53,58 +79,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- 3. Índices para performance
-CREATE INDEX IF NOT EXISTS idx_anuncios_status ON public.anuncios (status);
-CREATE INDEX IF NOT EXISTS idx_anuncios_categoria ON public.anuncios (categoria);
-CREATE INDEX IF NOT EXISTS idx_anuncios_expiracao ON public.anuncios (data_expiracao);
-CREATE INDEX IF NOT EXISTS idx_anuncios_created ON public.anuncios (created_at DESC);
+-- Exemplo de uso:
+-- INSERT: encrypt_whatsapp('5521999999999')
+-- SELECT: decrypt_whatsapp(vendedor_whatsapp)
 
--- 4. Row Level Security (RLS)
-ALTER TABLE public.anuncios ENABLE ROW LEVEL SECURITY;
+-- ============================================
+-- MIGRAÇÃO: Adicionar colunas novas (rodar uma vez)
+-- ============================================
+-- Se sua tabela já existe e não tem essas colunas, execute:
 
--- Política: qualquer pessoa pode ler anúncios ativos não expirados
-CREATE POLICY "Vitrine pública — leitura de anúncios ativos"
-  ON public.anuncios
-  FOR SELECT
-  USING (
-    status = 'ativo'
-    AND (data_expiracao IS NULL OR data_expiracao > now())
-  );
-
--- Política: qualquer pessoa pode criar anúncios (pendente)
-CREATE POLICY "Qualquer um pode criar anúncios"
-  ON public.anuncios
-  FOR INSERT
-  WITH CHECK (status = 'pendente');
-
--- Política: service_role (backend) tem acesso total
--- (as API Routes do Next.js usam a service_role key via ADMIN_PASSWORD)
-
--- 5. Storage bucket para fotos (Neon não tem storage, use S3/Cloudinary)
--- Para fotos, recomenda-se usar: Cloudinary, AWS S3, Vercel Blob, etc
-
--- 6. (Opcional) Função para expirar anúncios automaticamente via pg_cron
--- Requer extensão pg_cron habilitada no Neon
--- CREATE EXTENSION IF NOT EXISTS pg_cron;
--- SELECT cron.schedule('expirar-anuncios', '0 0 * * *',
---   $$UPDATE public.anuncios SET status = 'removido'
---     WHERE status = 'ativo' AND data_expiracao < now()$$);
-
--- =====================================================
--- EXEMPLOS DE USO (no backend/Next.js)
--- =====================================================
-
--- Criptografar ao inserir:
--- INSERT INTO anuncios (vendedor_whatsapp, ...)
--- VALUES (encrypt_whatsapp('5511999999999'), ...);
-
--- Descriptografar ao ler:
--- SELECT id, decrypt_whatsapp(vendedor_whatsapp) as whatsapp, ... 
--- FROM anuncios WHERE status = 'ativo';
-
--- =====================================================
--- IMPORTANTE: ALTERAR CHAVE DE CRIPTOGRAFIA EM PRODUÇÃO
--- =====================================================
--- Em produção, use uma variável de ambiente segura:
--- SET app.encryption_key = 'sua-chave-segura-aqui';
--- Depois atualize as funções para usar current_setting('app.encryption_key');
+ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS tamanho TEXT NOT NULL DEFAULT '';
+ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS regras_aceitas BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS cidade TEXT NOT NULL DEFAULT '';
+ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS estado TEXT NOT NULL DEFAULT '';

@@ -43,6 +43,10 @@ yarn-error.log*
 *.swo
 *~
 
+# Markdown documentation
+*.md
+!README.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

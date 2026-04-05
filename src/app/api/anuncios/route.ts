@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAnuncios, addAnuncio } from '@/lib/database'
+import { getAnuncios, addAnuncio } from '@/lib/db'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -33,9 +33,9 @@ export async function POST(request: Request) {
     const body = await request.json()
 
     const { titulo, descricao, preco, categoria, vendedor_whatsapp,
-            fotos, tamanho, regras_aceitas } = body
+            fotos, tamanho, regras_aceitas, cidade, estado } = body
 
-    if (!titulo || !preco || !categoria || !vendedor_whatsapp) {
+    if (!titulo || !preco || !categoria || !vendedor_whatsapp || !cidade || !estado) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes' }, { status: 400 })
     }
 
@@ -48,8 +48,10 @@ export async function POST(request: Request) {
       fotos: fotos || [],
       status: 'pendente',
       data_expiracao: null,
-      tamanho: tamanho || [],
+      tamanho: tamanho || '',
       regras_aceitas: !!regras_aceitas,
+      cidade,
+      estado: estado.toUpperCase(),
     })
 
     return NextResponse.json(newAnuncio, { status: 201 })

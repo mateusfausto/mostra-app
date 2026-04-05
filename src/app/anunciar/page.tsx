@@ -16,8 +16,6 @@ const CATEGORIAS = [
   { value: 'acessorio', label: 'Acessório' },
 ]
 
-const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY ?? 'seu@email.com'
-const MEU_WHATSAPP = process.env.NEXT_PUBLIC_MEU_WHATSAPP ?? '5511999999999'
 const TAXA = process.env.NEXT_PUBLIC_TAXA_ANUNCIO ?? '30'
 
 export default function AnunciarPage() {
@@ -28,25 +26,46 @@ export default function AnunciarPage() {
   const [previews, setPreviews] = useState<string[]>([])
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [regrasAceitas, setRegrasAceitas] = useState(false)
-  const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([])
+  const [tamanhoSelecionado, setTamanhoSelecionado] = useState<string>('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     titulo: '', descricao: '', preco: '', categoria: '',
-    vendedor_whatsapp: '',
+    vendedor_whatsapp: '', cidade: '', estado: '',
   })
 
-  function set(key: string, value: string) {
+  function set(key: string, value: string | string[]) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  function toggleTamanho(tamanho: string) {
-    setTamanhosSelecionados(prev =>
-      prev.includes(tamanho)
-        ? prev.filter(t => t !== tamanho)
-        : [...prev, tamanho]
-    )
+  function handlePreco(raw: string) {
+    // Remove tudo que não é dígito
+    const digits = raw.replace(/\D/g, '')
+    if (!digits) { set('preco', ''); return }
+    // Converte centavos → reais
+    const num = parseInt(digits, 10)
+    const formatted = (num / 100).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+    set('preco', formatted)
   }
+
+  function handleWhatsapp(raw: string) {
+    // Mantém só dígitos
+    let digits = raw.replace(/\D/g, '')
+    // Limita a 11 dígitos (DDD + 9 dígitos)
+    digits = digits.slice(0, 11)
+    // Aplica máscara (XX) XXXXX-XXXX
+    let masked = ''
+    if (digits.length > 0) masked += '(' + digits.slice(0, 2)
+    if (digits.length >= 2) masked += ') '
+    if (digits.length > 2) masked += digits.slice(2, 7)
+    if (digits.length > 7) masked += '-' + digits.slice(7, 11)
+    set('vendedor_whatsapp', masked)
+  }
+
+
 
   function showToast(msg: string) {
     setToast({ visible: true, msg })
@@ -76,7 +95,7 @@ export default function AnunciarPage() {
   }
 
   async function handleSubmit() {
-    if (!form.titulo || !form.preco || !form.categoria || !form.vendedor_whatsapp) {
+    if (!form.titulo || !form.preco || !form.categoria || !form.vendedor_whatsapp || !form.cidade || !form.estado) {
       showToast('⚠️ Preencha os campos obrigatórios')
       return
     }
@@ -105,9 +124,9 @@ export default function AnunciarPage() {
       // 2. Create anuncio
       const payload = {
         ...form,
-        preco: parseFloat(form.preco),
+        preco: parseFloat(form.preco.replace(/\./g, '').replace(',', '.')),
         fotos: fotoUrls,
-        tamanho: tamanhosSelecionados,
+        tamanho: tamanhoSelecionado,
         regras_aceitas: regrasAceitas,
       }
 
@@ -136,12 +155,12 @@ export default function AnunciarPage() {
 
   function resetForm() {
     setForm({ titulo:'', descricao:'', preco:'', categoria:'',
-      vendedor_whatsapp:'' })
+      vendedor_whatsapp:'', cidade:'', estado:'' })
     setPreviews([])
     setPhotoFiles([])
     setAnuncioId('')
     setRegrasAceitas(false)
-    setTamanhosSelecionados([])
+    setTamanhoSelecionado('')
     setStep('form')
   }
 
@@ -192,42 +211,54 @@ export default function AnunciarPage() {
   return (
     <>
       <Header />
-      <main className="max-w-[480px] mx-auto px-4 pt-6 pb-28">
-        {/* Head */}
-        <div className="mb-7">
-          <p className="font-dm text-[10px] tracking-[0.3em] uppercase text-gold mb-2">✦ Anuncie sua peça</p>
-          <h1 className="font-cormorant text-[28px] font-light leading-tight">Junte-se à<br />vitrine da MOSTRALY!</h1>
-          <p className="font-dm text-[13px] text-muted mt-2.5 leading-relaxed">
-            Taxa única de publicação: <strong className="text-ink">R$ {TAXA},00</strong> por anúncio.<br />
-            Sua peça fica ativa por <strong className="text-ink">30 dias</strong> pagando apenas <strong className="text-ink">R$ 1,00</strong> por dia!
-          </p>
-        </div>
+      <main className="min-h-screen pb-28">
+        {/* Hero Section */}
+        <section className="bg-ink relative overflow-hidden px-4 pt-12 pb-9">
+          <div className="absolute inset-0"
+            style={{ background: 'radial-gradient(ellipse at 70% 50%, rgba(201,169,110,0.15) 0%, transparent 70%)' }}
+          />
+          <div className="max-w-[480px] mx-auto relative">
+            <p className="font-dm text-[10px] tracking-[0.3em] uppercase text-gold mb-3">
+              ✦ Compartilhe seu estilo
+            </p>
+            <h1 className="font-cormorant text-5xl font-light leading-[1.08] text-cream">
+              Sua peça<br />encontrará o{' '}
+              <em className="italic text-gold-light">lar ideal</em>
+            </h1>
+            <p className="mt-4 font-dm text-[13px] font-light leading-relaxed text-cream/60 max-w-[280px]">
+              Taxa única de publicação: <strong className="text-gold">R$ {TAXA},00</strong> e sua peça fica ativa por <strong className="text-gold">30 dias</strong>.
+            </p>
+          </div>
+        </section>
 
-        <div className="bg-gold/10 border border-gold/30 rounded-[2px] p-3.5 mb-5">
-          <p className="font-dm text-[12px] text-muted leading-relaxed">
-            <strong className="text-ink">Como funciona:</strong> Preencha e envie o formulário, pague com PIX e aguarde aprovação em até 24h.
-          </p>
-        </div>
+        {/* Form Container */}
+        <div className="max-w-[480px] mx-auto px-4">
+          {/* Info Box */}
+          <div className="bg-gold/10 border border-gold/30 rounded-[2px] p-3.5 mb-5 mt-6">
+            <p className="font-dm text-[12px] text-muted leading-relaxed">
+              <strong className="text-ink">Como funciona:</strong> Preencha e envie o formulário, pague com PIX e aguarde aprovação em até 24h.
+            </p>
+          </div>
 
-        {/* Photos */}
+        {/* Photos & Videos */}
         <div className="mb-4">
           <label className="block font-dm text-[10px] font-medium tracking-widest uppercase text-muted mb-1.5">
-            Fotos da peça *
+            Fotos e vídeos da peça *
           </label>
           <div
             onClick={() => fileRef.current?.click()}
             className="border-2 border-dashed border-gold/40 rounded-[2px] p-8 text-center
               cursor-pointer hover:border-gold hover:bg-gold/5 transition-all bg-gold/[0.03]"
-          >
+            >
             <svg className="text-gold mx-auto mb-2.5" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
             </svg>
             <p className="font-dm text-[13px] text-muted leading-relaxed">
-              <strong className="text-ink">Toque para adicionar fotos</strong><br />
-              Até 6 imagens • JPG, PNG
+              <strong className="text-ink">Toque para adicionar fotos e vídeos</strong><br />
+              Até 6 arquivos • JPG, PNG, MP4, MOV
             </p>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+          <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden"
             onChange={e => handleFiles(e.target.files)} />
           {previews.length > 0 && (
             <div>
@@ -264,10 +295,18 @@ export default function AnunciarPage() {
 
         {/* Preço + Categoria */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <Input label="Preço (R$) *" type="number" value={form.preco}
-            onChange={e => set('preco', e.target.value)} placeholder="0,00" min="0" step="0.01" />
+          <Input label="Preço (R$) *" type="text" inputMode="numeric" value={form.preco}
+            onChange={e => handlePreco(e.target.value)} placeholder="0,00" />
           <Select label="Categoria *" value={form.categoria}
             onChange={e => set('categoria', e.target.value)} options={CATEGORIAS} />
+        </div>
+
+        {/* Cidade + Estado */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Input label="Cidade *" value={form.cidade}
+            onChange={e => set('cidade', e.target.value)} placeholder="Digite sua cidade" />
+          <Input label="Estado *" value={form.estado}
+            onChange={e => set('estado', e.target.value)} placeholder="Digite seu estado" maxLength={2} />
         </div>
 
         {/* Descrição */}
@@ -279,18 +318,22 @@ export default function AnunciarPage() {
 
         {/* Tamanho */}
         <div className="mb-6">
-          <p className="font-cormorant text-[18px] font-light text-ink mb-3">Tamanho</p>
-          <div className="grid grid-cols-2 gap-3">
-            {['P', 'M', 'G', 'GG'].map(tam => (
-              <label key={tam} className="flex items-center gap-2 p-3 border border-gold/30 rounded-[2px] cursor-pointer hover:bg-gold/5 transition-colors">
+          <p className="font-dm text-[10px] font-medium tracking-widest uppercase text-muted mb-3">Tamanho</p>
+          <div className="grid grid-cols-3 gap-2">
+            {['PP', 'P', 'M', 'G', 'GG', 'XG', '36', '38', '40', '42', '44', '46'].map(tam => (
+              <label key={tam} className={`flex items-center justify-center p-3 border rounded-[2px] cursor-pointer transition-all ${
+                tamanhoSelecionado === tam
+                  ? 'border-gold bg-gold/20 text-gold font-medium'
+                  : 'border-gold/30 hover:bg-gold/5 text-ink'
+              }`}>
                 <input
                   type="radio"
                   name="tamanho"
-                  checked={tamanhosSelecionados.includes(tam)}
-                  onChange={() => toggleTamanho(tam)}
-                  className="w-4 h-4 cursor-pointer accent-gold"
+                  checked={tamanhoSelecionado === tam}
+                  onChange={() => setTamanhoSelecionado(tam)}
+                  className="hidden"
                 />
-                <span className="font-dm text-[13px] font-medium text-ink">{tam}</span>
+                <span className="font-dm text-[13px] font-medium">{tam}</span>
               </label>
             ))}
           </div>
@@ -299,7 +342,7 @@ export default function AnunciarPage() {
         {/* WhatsApp */}
         <div className="mb-6">
           <Input label="Seu WhatsApp *" type="tel" value={form.vendedor_whatsapp}
-            onChange={e => set('vendedor_whatsapp', e.target.value)} placeholder="(11) 99999-9999" />
+            onChange={e => handleWhatsapp(e.target.value)} placeholder="(21) 99999-9999" maxLength={15} />
         </div>
 
         {/* Regras e Termos */}
@@ -341,6 +384,7 @@ export default function AnunciarPage() {
           onClick={handleSubmit} disabled={loading || !regrasAceitas}>
           {loading ? 'Enviando…' : !regrasAceitas ? 'Aceite os termos para anunciar' : 'Enviar anúncio'}
         </Button>
+        </div>
       </main>
       <BottomNav />
       <Toast message={toast.msg} visible={toast.visible} />

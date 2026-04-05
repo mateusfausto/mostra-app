@@ -11,8 +11,10 @@ export interface Anuncio {
   categoria: string
   status: AnuncioStatus
   data_expiracao: string | null
-  tamanho: string[] // Array com tamanhos selecionados: 'P', 'M', 'G', 'GG'
+  tamanho: string // Tamanho único: 'PP', 'P', 'M', 'G', 'GG', 'XG', '36'-'46'
   regras_aceitas: boolean
+  cidade: string
+  estado: string
 }
 
 export interface Database {
@@ -33,9 +35,9 @@ export interface AnuncioFormData {
   preco: number
   categoria: string
   vendedor_whatsapp: string
-  medida_busto?: number
-  medida_cintura?: number
-  medida_quadril?: number
-  medida_comprimento?: number
+  cidade: string
+  estado: string
+  tamanho: string
+  regras_aceitas: boolean
   fotos: File[]
 }

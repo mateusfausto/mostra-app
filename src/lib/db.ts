@@ -1,15 +1,16 @@
 // db.ts - Abstração para banco de dados
-// Suporta múltiplos backends: PostgreSQL (Neon), SQLite local, etc.
+// Suporta múltiplos backends: JSON (dev local) e PostgreSQL/Neon (produção)
 
 import fs from 'fs'
 import path from 'path'
 import type { Anuncio } from '@/types/database'
 
-const DB_TYPE = process.env.DB_TYPE || 'json' // 'json', 'postgres', 'neon'
+const DB_TYPE = process.env.DB_TYPE || 'json'
+
+// ==================== JSON Backend (Desenvolvimento) ====================
+
 const DB_DIR = path.join(process.cwd(), '.db')
 const DB_FILE = path.join(DB_DIR, 'anuncios.json')
-
-// ==================== JSON Backend (Padrão) ====================
 
 function ensureDbFile() {
   if (!fs.existsSync(DB_DIR)) {
@@ -27,7 +28,7 @@ function readDB(): { anuncios: Anuncio[] } {
     const data = fs.readFileSync(DB_FILE, 'utf-8')
     return JSON.parse(data)
   } catch (e) {
-    console.error('Erro ao ler banco:', e)
+    console.error('Erro ao ler banco local:', e)
     return { anuncios: [] }
   }
 }
@@ -37,11 +38,40 @@ function writeDB(data: { anuncios: Anuncio[] }) {
     ensureDbFile()
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
   } catch (e) {
-    console.error('Erro ao escrever banco:', e)
+    console.error('Erro ao escrever banco local:', e)
   }
 }
 
-// ==================== Funções Principais ====================
+// ==================== PostgreSQL/Neon Backend (Produção) ====================
+
+let sql: any = null
+
+async function initPostgres() {
+  if (sql) return sql
+  
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL não configurada! Configure em .env ou variáveis de ambiente.')
+  }
+
+  try {
+    // Import condicional apenas para servidor
+    if (typeof window === 'undefined') {
+      const postgres = require('postgres')
+      sql = postgres(process.env.DATABASE_URL, {
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+        prepare: false,
+      })
+      console.log('✅ Conectado ao Neon')
+    }
+    return sql
+  } catch (error) {
+    console.error('❌ Erro ao conectar ao Neon:', error)
+    throw error
+  }
+}
+
+// ==================== Funções Públicas ====================
 
 export async function getAnuncios(): Promise<Anuncio[]> {
   if (DB_TYPE === 'json') {
@@ -50,8 +80,19 @@ export async function getAnuncios(): Promise<Anuncio[]> {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  return []
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    const anuncios = await dbConn`
+      SELECT * FROM anuncios 
+      ORDER BY created_at DESC
+    `
+    return anuncios
+  } catch (e) {
+    console.error('Erro ao buscar anúncios:', e)
+    return []
+  }
 }
 
 export async function getAnuncioById(id: string): Promise<Anuncio | null> {
@@ -59,8 +100,18 @@ export async function getAnuncioById(id: string): Promise<Anuncio | null> {
     const db = readDB()
     return db.anuncios.find(a => a.id === id) || null
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  return null
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    const result = await dbConn`
+      SELECT * FROM anuncios WHERE id = ${id}
+    `
+    return result[0] || null
+  } catch (e) {
+    console.error('Erro ao buscar anúncio:', e)
+    return null
+  }
 }
 
 export async function addAnuncio(anuncio: Omit<Anuncio, 'id' | 'created_at'>): Promise<Anuncio> {
@@ -79,8 +130,31 @@ export async function addAnuncio(anuncio: Omit<Anuncio, 'id' | 'created_at'>): P
     writeDB(db)
     return newAnuncio
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  throw new Error('DB_TYPE not supported')
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    const result = await dbConn`
+      INSERT INTO anuncios (
+        vendedor_whatsapp, titulo, descricao, preco, fotos,
+        categoria, status, data_expiracao, tamanho, regras_aceitas,
+        cidade, estado
+      ) VALUES (
+        ${anuncio.vendedor_whatsapp}, ${anuncio.titulo}, 
+        ${anuncio.descricao}, ${anuncio.preco}, 
+        ${anuncio.fotos}, ${anuncio.categoria}, 
+        ${anuncio.status}, ${anuncio.data_expiracao}, 
+        ${anuncio.tamanho}, ${anuncio.regras_aceitas},
+        ${anuncio.cidade}, ${anuncio.estado}
+      )
+      RETURNING *
+    `
+    
+    return result[0]
+  } catch (e) {
+    console.error('Erro ao adicionar anúncio:', e)
+    throw e
+  }
 }
 
 export async function updateAnuncio(id: string, updates: Partial<Omit<Anuncio, 'id' | 'created_at'>>): Promise<Anuncio | null> {
@@ -93,8 +167,48 @@ export async function updateAnuncio(id: string, updates: Partial<Omit<Anuncio, '
     writeDB(db)
     return db.anuncios[idx]
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  return null
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    // Build dynamic update query
+    const setClauses = []
+    const values: any[] = []
+    
+    if (updates.status !== undefined) {
+      setClauses.push('status')
+      values.push(updates.status)
+    }
+    if (updates.titulo !== undefined) {
+      setClauses.push('titulo')
+      values.push(updates.titulo)
+    }
+    if (updates.descricao !== undefined) {
+      setClauses.push('descricao')
+      values.push(updates.descricao)
+    }
+    if (updates.preco !== undefined) {
+      setClauses.push('preco')
+      values.push(updates.preco)
+    }
+    if (updates.data_expiracao !== undefined) {
+      setClauses.push('data_expiracao')
+      values.push(updates.data_expiracao)
+    }
+
+    if (setClauses.length === 0) return null
+
+    // Build the query using postgres.js template
+    let query = `UPDATE anuncios SET `
+    query += setClauses.map((col, i) => `${col} = $${i + 1}`).join(', ')
+    query += ` WHERE id = $${setClauses.length + 1} RETURNING *`
+
+    const result = await dbConn.unsafe(query, [...values, id])
+    return result[0] || null
+  } catch (e) {
+    console.error('Erro ao atualizar anúncio:', e)
+    return null
+  }
 }
 
 export async function deleteAnuncio(id: string): Promise<boolean> {
@@ -107,8 +221,18 @@ export async function deleteAnuncio(id: string): Promise<boolean> {
     writeDB(db)
     return true
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  return false
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    await dbConn`
+      DELETE FROM anuncios WHERE id = ${id}
+    `
+    return true
+  } catch (e) {
+    console.error('Erro ao deletar anúncio:', e)
+    return false
+  }
 }
 
 export async function getAnunciosByStatus(status: 'pendente' | 'ativo' | 'vendido'): Promise<Anuncio[]> {
@@ -120,8 +244,20 @@ export async function getAnunciosByStatus(status: 'pendente' | 'ativo' | 'vendid
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  return []
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    const anuncios = await dbConn`
+      SELECT * FROM anuncios 
+      WHERE status = ${status}
+      ORDER BY created_at DESC
+    `
+    return anuncios
+  } catch (e) {
+    console.error('Erro ao buscar anúncios por status:', e)
+    return []
+  }
 }
 
 export async function getMetricas(token?: string) {
@@ -134,6 +270,21 @@ export async function getMetricas(token?: string) {
       total: db.anuncios.length,
     }
   }
-  // TODO: Implementar para Neon/PostgreSQL
-  return { pendente: 0, ativo: 0, vendido: 0, total: 0 }
+  
+  // PostgreSQL/Neon
+  const dbConn = await initPostgres()
+  try {
+    const result = await dbConn`
+      SELECT 
+        COUNT(*) FILTER (WHERE status = 'pendente') as pendente,
+        COUNT(*) FILTER (WHERE status = 'ativo') as ativo,
+        COUNT(*) FILTER (WHERE status = 'vendido') as vendido,
+        COUNT(*) as total
+      FROM anuncios
+    `
+    return result[0]
+  } catch (e) {
+    console.error('Erro ao buscar métricas:', e)
+    return { pendente: 0, ativo: 0, vendido: 0, total: 0 }
+  }
 }
