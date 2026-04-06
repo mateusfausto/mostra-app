@@ -79,9 +79,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
+-- Versão segura: retorna valor bruto se decrypt falhar
+-- (chave errada, dado em texto puro, etc.)
+CREATE OR REPLACE FUNCTION safe_decrypt_whatsapp(
+  encrypted TEXT,
+  key TEXT DEFAULT 'mostra-secret-key-change-me'
+) RETURNS TEXT AS $$
+BEGIN
+  RETURN convert_from(
+    decrypt(
+      decode(encrypted, 'base64'),
+      convert_to(key, 'UTF8'),
+      'aes'
+    ),
+    'UTF8'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN encrypted;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 -- Exemplo de uso:
 -- INSERT: encrypt_whatsapp('5521999999999')
--- SELECT: decrypt_whatsapp(vendedor_whatsapp)
+-- SELECT: safe_decrypt_whatsapp(vendedor_whatsapp, 'sua-chave')
 
 -- ============================================
 -- MIGRAÇÃO: Adicionar colunas novas (rodar uma vez)

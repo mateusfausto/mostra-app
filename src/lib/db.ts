@@ -91,7 +91,7 @@ export async function getAnuncios(): Promise<Anuncio[]> {
     const anuncios = await dbConn`
       SELECT 
         id, created_at,
-        decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
       FROM anuncios 
@@ -116,7 +116,7 @@ export async function getAnuncioById(id: string): Promise<Anuncio | null> {
     const result = await dbConn`
       SELECT 
         id, created_at,
-        decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
       FROM anuncios WHERE id = ${id}
@@ -163,7 +163,7 @@ export async function addAnuncio(anuncio: Omit<Anuncio, 'id' | 'created_at'>): P
       )
       RETURNING 
         id, created_at,
-        decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
     `
@@ -220,7 +220,7 @@ export async function updateAnuncio(id: string, updates: Partial<Omit<Anuncio, '
     let query = `UPDATE anuncios SET `
     query += setClauses.map((col, i) => `${col} = $${i + 1}`).join(', ')
     query += ` WHERE id = $${setClauses.length + 1}`
-    query += ` RETURNING id, created_at, decrypt_whatsapp(vendedor_whatsapp, $${setClauses.length + 2}) AS vendedor_whatsapp,`
+    query += ` RETURNING id, created_at, safe_decrypt_whatsapp(vendedor_whatsapp, $${setClauses.length + 2}) AS vendedor_whatsapp,`
     query += ` titulo, descricao, preco, fotos, categoria, status, data_expiracao, tamanho, regras_aceitas, cidade, estado`
 
     const result = await dbConn.unsafe(query, [...values, id, WHATSAPP_KEY])
@@ -271,7 +271,7 @@ export async function getAnunciosByStatus(status: 'pendente' | 'ativo' | 'vendid
     const anuncios = await dbConn`
       SELECT 
         id, created_at,
-        decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
       FROM anuncios 
