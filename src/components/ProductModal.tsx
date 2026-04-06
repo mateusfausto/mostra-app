@@ -9,6 +9,9 @@ const catLabel: Record<string, string> = {
 }
 
 function isVideo(url: string): boolean {
+  // Detectar data URLs de vídeo (base64)
+  if (url.startsWith('data:video/')) return true
+  // Detectar por extensão (URLs externas)
   const ext = url.toLowerCase().split('?')[0].split('.').pop()
   return ext === 'mp4' || ext === 'webm' || ext === 'mov' || ext === 'avi'
 }
