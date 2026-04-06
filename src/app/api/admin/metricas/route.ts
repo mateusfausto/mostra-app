@@ -20,10 +20,9 @@ export async function GET(request: Request) {
     const totalVendidos = anuncios.filter(a => a.status === 'vendido').length
     const totalRemovidos = anuncios.filter(a => a.status === 'removido').length
 
-    // Receita (preço dos anúncios vendidos)
-    const receita = anuncios
-      .filter(a => a.status === 'vendido')
-      .reduce((sum, a) => sum + (Number(a.preco) || 0), 0)
+    // Receita = taxa por anúncio × total de anúncios ativos (já pagaram R$30)
+    const taxaAnuncio = Number(process.env.NEXT_PUBLIC_TAXA_ANUNCIO) || 30
+    const receita = totalAtivos * taxaAnuncio
 
     // Taxa de conversão
     const taxaConversao = anuncios.length > 0

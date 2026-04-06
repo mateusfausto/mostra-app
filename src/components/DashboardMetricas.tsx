@@ -57,7 +57,7 @@ export default function DashboardMetricas({ token }: Props) {
           <p className="font-cormorant text-2xl font-light text-green-900">
             R$ {Number(m.receita).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <p className="font-dm text-xs text-green-600 mt-1">{totais.vendidos} vendidos</p>
+          <p className="font-dm text-xs text-green-600 mt-1">{totais.ativos} anúncios ativos × R$30</p>
         </div>
 
         <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">

@@ -27,9 +27,10 @@ function daysLeft(dt: string | null) {
 interface Props {
   anuncio: Anuncio | null
   onClose: () => void
+  hideWhatsApp?: boolean
 }
 
-export default function ProductModal({ anuncio, onClose }: Props) {
+export default function ProductModal({ anuncio, onClose, hideWhatsApp = false }: Props) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
 
@@ -46,7 +47,8 @@ export default function ProductModal({ anuncio, onClose }: Props) {
     : ['https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=600&q=80']
   
   const currentFoto = fotos[currentImageIndex]
-  const phone = anuncio.vendedor_whatsapp.replace(/\D/g, '')
+  const rawPhone = anuncio.vendedor_whatsapp.replace(/\D/g, '')
+  const phone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`
   const msg = encodeURIComponent(`Olá, vi seu *${anuncio?.titulo}* na vitrine e quero comprar! 😍`)
   const waLink = `https://wa.me/${phone}?text=${msg}`
 
@@ -186,32 +188,32 @@ export default function ProductModal({ anuncio, onClose }: Props) {
 
           {/* Tamanho */}
           {temTamanho && (
-            <div className="bg-cream rounded-[2px] p-4 mb-5">
+            <div className="mb-4">
               <p className="font-dm text-[10px] tracking-widest uppercase text-muted mb-2">Tamanho</p>
-              <div className="flex gap-2">
-                <span className="inline-flex items-center justify-center px-3 h-8 bg-gold text-ink font-dm font-medium text-sm rounded">
-                  {anuncio.tamanho}
-                </span>
-              </div>
+              <span className="inline-flex items-center justify-center px-3 h-8 border border-gold/40 text-ink font-dm font-medium text-sm rounded">
+                {anuncio.tamanho}
+              </span>
             </div>
           )}
 
           <div className="h-px bg-black/8 mb-5" />
 
           {/* CTA */}
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="
-              w-full flex items-center justify-center gap-2
-              py-4 bg-[#25D366] text-white rounded-[2px]
-              font-dm text-sm font-medium tracking-wider uppercase
-              hover:bg-[#20bd5a] transition-colors
-            "
-          >            
-            Tenho interesse! Chamar no WhatsApp
-          </a>
+          {!hideWhatsApp && (
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                w-full flex items-center justify-center gap-2
+                py-4 bg-[#25D366] text-white rounded-[2px]
+                font-dm text-sm font-medium tracking-wider uppercase
+                hover:bg-[#20bd5a] transition-colors
+              "
+            >
+              Tenho interesse! Chamar no WhatsApp
+            </a>
+          )}
 
           <p className="text-center font-dm text-[11px] text-muted mt-3">
             Anúncio expira em {daysLeft(anuncio.data_expiracao)}

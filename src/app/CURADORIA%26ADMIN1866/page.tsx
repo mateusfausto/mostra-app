@@ -197,7 +197,7 @@ function AdminPanelContent() {
                 </div>
 
                 {a.vendedor_whatsapp && (
-                  <a href={`https://wa.me/${a.vendedor_whatsapp.replace(/\D/g, '')}`}
+                  <a href={`https://wa.me/${(() => { const d = a.vendedor_whatsapp.replace(/\D/g, ''); return d.startsWith('55') ? d : '55' + d; })()}`}
                     target="_blank" rel="noopener noreferrer"
                     className="font-dm text-[10px] text-[#25D366] inline-flex items-center gap-1 hover:text-[#20bd5a] transition-colors mb-3">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -241,7 +241,7 @@ function AdminPanelContent() {
                           Vendido
                         </button>
                         <button onClick={() => action(a.id, 'remover')}
-                          className="py-1.5 px-3 bg-red-500 text-white rounded-[2px]
+                          className="flex-1 py-1.5 bg-red-500 text-white rounded-[2px]
                             font-dm text-[10px] font-medium tracking-wide uppercase
                             hover:opacity-80 transition-opacity">
                           Remover
@@ -262,7 +262,7 @@ function AdminPanelContent() {
           </div>
         )}
       </main>
-      <ProductModal anuncio={selectedAnuncio} onClose={() => setSelectedAnuncio(null)} />
+      <ProductModal anuncio={selectedAnuncio} onClose={() => setSelectedAnuncio(null)} hideWhatsApp />
       <BottomNav />
       <Toast message={toast.msg} visible={toast.visible} />
     </>
