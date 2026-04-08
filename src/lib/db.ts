@@ -71,10 +71,6 @@ async function initPostgres() {
   }
 }
 
-// ==================== Chave de criptografia ====================
-
-const WHATSAPP_KEY = process.env.WHATSAPP_SECRET_KEY || 'mostra-secret-key-change-me'
-
 // ==================== Funções Públicas ====================
 
 export async function getAnuncios(): Promise<Anuncio[]> {
@@ -90,8 +86,7 @@ export async function getAnuncios(): Promise<Anuncio[]> {
   try {
     const anuncios = await dbConn`
       SELECT 
-        id, created_at,
-        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        id, created_at, vendedor_nome, vendedor_sobrenome, vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
       FROM anuncios 
@@ -115,8 +110,7 @@ export async function getAnuncioById(id: string): Promise<Anuncio | null> {
   try {
     const result = await dbConn`
       SELECT 
-        id, created_at,
-        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        id, created_at, vendedor_nome, vendedor_sobrenome, vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
       FROM anuncios WHERE id = ${id}
@@ -150,11 +144,13 @@ export async function addAnuncio(anuncio: Omit<Anuncio, 'id' | 'created_at'>): P
   try {
     const result = await dbConn`
       INSERT INTO anuncios (
-        vendedor_whatsapp, titulo, descricao, preco, fotos,
+        vendedor_nome, vendedor_sobrenome, vendedor_whatsapp,
+        titulo, descricao, preco, fotos,
         categoria, status, data_expiracao, tamanho, regras_aceitas,
         cidade, estado
       ) VALUES (
-        encrypt_whatsapp(${anuncio.vendedor_whatsapp}, ${WHATSAPP_KEY}), ${anuncio.titulo}, 
+        ${anuncio.vendedor_nome}, ${anuncio.vendedor_sobrenome},
+        ${anuncio.vendedor_whatsapp}, ${anuncio.titulo}, 
         ${anuncio.descricao}, ${anuncio.preco}, 
         ${anuncio.fotos}, ${anuncio.categoria}, 
         ${anuncio.status}, ${anuncio.data_expiracao}, 
@@ -162,8 +158,7 @@ export async function addAnuncio(anuncio: Omit<Anuncio, 'id' | 'created_at'>): P
         ${anuncio.cidade}, ${anuncio.estado}
       )
       RETURNING 
-        id, created_at,
-        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        id, created_at, vendedor_nome, vendedor_sobrenome, vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
     `
@@ -220,10 +215,10 @@ export async function updateAnuncio(id: string, updates: Partial<Omit<Anuncio, '
     let query = `UPDATE anuncios SET `
     query += setClauses.map((col, i) => `${col} = $${i + 1}`).join(', ')
     query += ` WHERE id = $${setClauses.length + 1}`
-    query += ` RETURNING id, created_at, safe_decrypt_whatsapp(vendedor_whatsapp, $${setClauses.length + 2}) AS vendedor_whatsapp,`
+    query += ` RETURNING id, created_at, vendedor_nome, vendedor_sobrenome, vendedor_whatsapp,`
     query += ` titulo, descricao, preco, fotos, categoria, status, data_expiracao, tamanho, regras_aceitas, cidade, estado`
 
-    const result = await dbConn.unsafe(query, [...values, id, WHATSAPP_KEY])
+    const result = await dbConn.unsafe(query, [...values, id])
     return result[0] || null
   } catch (e) {
     console.error('Erro ao atualizar anúncio:', e)
@@ -270,8 +265,7 @@ export async function getAnunciosByStatus(status: 'pendente' | 'ativo' | 'vendid
   try {
     const anuncios = await dbConn`
       SELECT 
-        id, created_at,
-        safe_decrypt_whatsapp(vendedor_whatsapp, ${WHATSAPP_KEY}) AS vendedor_whatsapp,
+        id, created_at, vendedor_nome, vendedor_sobrenome, vendedor_whatsapp,
         titulo, descricao, preco, fotos, categoria, status,
         data_expiracao, tamanho, regras_aceitas, cidade, estado
       FROM anuncios 

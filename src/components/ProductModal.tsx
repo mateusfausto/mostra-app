@@ -183,6 +183,14 @@ export default function ProductModal({ anuncio, onClose, hideWhatsApp = false }:
             {anuncio.cidade}, {anuncio.estado}
           </p>
 
+          {/* Vendedor */}
+          {(anuncio.vendedor_nome || anuncio.vendedor_sobrenome) && (
+            <div className="mb-4">
+              <p className="font-dm text-[10px] tracking-widest uppercase text-muted mb-1">Vendido Por</p>
+              <p className="font-dm text-[15px] font-medium text-ink">{anuncio.vendedor_nome} {anuncio.vendedor_sobrenome}</p>
+            </div>
+          )}
+
           {anuncio.descricao && (
             <p className="font-dm text-sm leading-relaxed text-muted mb-4">
               {anuncio.descricao}

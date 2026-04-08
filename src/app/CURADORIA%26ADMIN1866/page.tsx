@@ -72,7 +72,7 @@ function AdminPanelContent() {
       headers: { 'x-admin-token': password },
     })
     if (res.status === 401) {
-      showToast('❌ Senha incorreta')
+      showToast('Senha incorreta')
       return
     }
     const data = await res.json()
@@ -88,7 +88,7 @@ function AdminPanelContent() {
       body: JSON.stringify({ action: act }),
     })
     if (!res.ok) { showToast('Erro ao executar ação'); return }
-    const msgs = { aprovar: '✓ Aprovado! Ativo por 30 dias', vendido: '✓ Marcado como vendido', remover: '✓ Anúncio removido' }
+    const msgs = { aprovar: 'Aprovado! Ativo por 30 dias', vendido: 'Marcado como vendido', remover: 'Anúncio removido' }
     showToast(msgs[act])
     fetchAnuncios(tab, token)
     fetchAllCounts(token)

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
@@ -26,11 +26,13 @@ export default function AnunciarPage() {
   const [previews, setPreviews] = useState<string[]>([])
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [regrasAceitas, setRegrasAceitas] = useState(false)
+  const [showTermos, setShowTermos] = useState(false)
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState<string>('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     titulo: '', descricao: '', preco: '', categoria: '',
+    vendedor_nome: '', vendedor_sobrenome: '',
     vendedor_whatsapp: '', cidade: '', estado: '',
   })
 
@@ -94,14 +96,19 @@ export default function AnunciarPage() {
     setPreviews([])
   }
 
-  async function handleSubmit() {
-    if (!form.titulo || !form.preco || !form.categoria || !form.vendedor_whatsapp || !form.cidade || !form.estado) {
-      showToast('⚠️ Preencha os campos obrigatórios')
+  async function handleSubmit(skipTermosCheck = false) {
+    if (!form.titulo || !form.preco || !form.categoria || !form.vendedor_whatsapp || !form.cidade || !form.estado || !form.vendedor_nome.trim() || !form.vendedor_sobrenome.trim()) {
+      showToast('Preencha os campos obrigatórios')
       return
     }
 
-    if (!regrasAceitas) {
-      showToast('⚠️ Você deve aceitar as regras para anunciar')
+    if (photoFiles.length < 4) {
+      showToast('Adicione ao menos 4 fotos ou vídeos')
+      return
+    }
+
+    if (!skipTermosCheck && !regrasAceitas) {
+      showToast('Você deve aceitar as regras para anunciar')
       return
     }
 
@@ -147,7 +154,7 @@ export default function AnunciarPage() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erro ao enviar anúncio'
       console.error('[ANUNCIO ERROR]', msg, e)
-      showToast('❌ ' + msg)
+      showToast(msg)
     } finally {
       setLoading(false)
     }
@@ -155,6 +162,7 @@ export default function AnunciarPage() {
 
   function resetForm() {
     setForm({ titulo:'', descricao:'', preco:'', categoria:'',
+      vendedor_nome:'', vendedor_sobrenome:'',
       vendedor_whatsapp:'', cidade:'', estado:'' })
     setPreviews([])
     setPhotoFiles([])
@@ -226,7 +234,8 @@ export default function AnunciarPage() {
               <em className="italic text-gold-light">lar ideal</em>
             </h1>
             <p className="mt-4 font-dm text-[13px] font-light leading-relaxed text-cream/60 max-w-[280px]">
-              Taxa única de publicação: <strong className="text-gold">R$ {TAXA},00</strong> e sua peça fica ativa por <strong className="text-gold">30 dias</strong>.
+              Taxa única de publicação de <strong className="text-gold">R$ {TAXA},00</strong> e sua peça fica ativa por <strong className="text-gold">30 dias</strong>. <br />
+              Na prática é sua peça em nossa vitrine por <strong className="text-gold">R$ 1,00</strong> ao dia!
             </p>
           </div>
         </section>
@@ -236,7 +245,7 @@ export default function AnunciarPage() {
           {/* Info Box */}
           <div className="bg-gold/10 border border-gold/30 rounded-[2px] p-3.5 mb-5 mt-6">
             <p className="font-dm text-[12px] text-muted leading-relaxed">
-              <strong className="text-ink">Como funciona:</strong> Preencha e envie o formulário, pague com PIX e aguarde aprovação em até 24h.
+              <strong className="text-ink">Como funciona:</strong> Preencha todos os dados, coloque fotos e pelo menos 1 vídeo da peça, envie o anúncio e aguarde. Entraremos em contato o mais rápido possível.
             </p>
           </div>
 
@@ -255,7 +264,7 @@ export default function AnunciarPage() {
             </svg>
             <p className="font-dm text-[13px] text-muted leading-relaxed">
               <strong className="text-ink">Toque para adicionar fotos e vídeos</strong><br />
-              Até 6 arquivos • JPG, PNG, MP4, MOV
+              Mínimo 4, máximo 6 arquivos • JPG, PNG, MP4, MOV
             </p>
           </div>
           <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden"
@@ -339,55 +348,177 @@ export default function AnunciarPage() {
           </div>
         </div>
 
+        {/* Nome e Sobrenome */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Input label="Nome *" value={form.vendedor_nome}
+            onChange={e => set('vendedor_nome', e.target.value)} placeholder="Seu nome" maxLength={50} />
+          <Input label="Sobrenome *" value={form.vendedor_sobrenome}
+            onChange={e => set('vendedor_sobrenome', e.target.value)} placeholder="Seu sobrenome" maxLength={50} />
+        </div>
+
         {/* WhatsApp */}
-        <div className="mb-6">
+        <div className="mb-4">
           <Input label="Seu WhatsApp *" type="tel" value={form.vendedor_whatsapp}
             onChange={e => handleWhatsapp(e.target.value)} placeholder="(21) 99999-9999" maxLength={15} />
         </div>
 
-        {/* Regras e Termos */}
+        {/* Termos e Envio */}
         <div className="mb-6">
-          <div className="bg-gold/10 border border-gold/30 rounded-[2px] p-4 mb-4">
-            <p className="font-cormorant text-[18px] font-light text-ink mb-3">
-              Termos e Condições
-            </p>
-            <div className="space-y-2 mb-3">
-              <p className="font-dm text-[13px] text-muted leading-relaxed">
-                ✓ As peças devem estar em bom estado de conservação
-              </p>
-              <p className="font-dm text-[13px] text-muted leading-relaxed">
-                ✓ Fotos devem ser claras e mostrar a peça corretamente
-              </p>
-              <p className="font-dm text-[13px] text-muted leading-relaxed">
-                ✓ Descrição deve ser honesta e precisa
-              </p>
-              <p className="font-dm text-[13px] text-muted leading-relaxed">
-                ✓ Respeitar as políticas de moderação da plataforma
-              </p>
+          {regrasAceitas ? (
+            <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-[2px]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-green-600 flex-shrink-0">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <span className="font-dm text-[13px] text-green-700">Termos aceitos</span>
+              <button onClick={() => { setRegrasAceitas(false); setShowTermos(true) }}
+                className="ml-auto font-dm text-[11px] text-green-600 underline">Rever termos</button>
             </div>
-          </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (!form.titulo || !form.preco || !form.categoria || !form.vendedor_whatsapp || !form.cidade || !form.estado || !form.vendedor_nome.trim() || !form.vendedor_sobrenome.trim()) {
+                  showToast('Preencha os campos obrigatórios antes de prosseguir')
+                  return
+                }
+                if (photoFiles.length < 4) {
+                  showToast('Adicione ao menos 4 fotos ou vídeos')
+                  return
+                }
+                setShowTermos(true)
+              }}
+              className="w-full py-4 bg-ink text-cream rounded-[2px]
+                font-dm text-[13px] font-medium tracking-wider uppercase
+                hover:bg-ink/90 transition-colors"
+            >
+              Ler termos e enviar anúncio
+            </button>
+          )}
 
-          <label className="flex items-start gap-3 cursor-pointer p-3 hover:bg-gold/5 rounded-[2px] transition-colors border border-gold/20">
-            <input
-              type="checkbox"
-              checked={regrasAceitas}
-              onChange={e => setRegrasAceitas(e.target.checked)}
-              className="w-5 h-5 mt-0.5 flex-shrink-0 cursor-pointer accent-gold"
-            />
-            <span className="font-dm text-[13px] text-muted leading-relaxed">
-              Confirmo que li e aceito os termos acima. Meu anúncio está de acordo com as políticas da plataforma.
-            </span>
-          </label>
+          {regrasAceitas && (
+            <Button variant="dark" fullWidth className="py-4 text-[13px]"
+              onClick={() => handleSubmit()} disabled={loading}>
+              {loading ? 'Enviando…' : 'Enviar anúncio'}
+            </Button>
+          )}
         </div>
 
-        <Button variant="dark" fullWidth className="py-4 text-[13px]"
-          onClick={handleSubmit} disabled={loading || !regrasAceitas}>
-          {loading ? 'Enviando…' : !regrasAceitas ? 'Aceite os termos para anunciar' : 'Enviar anúncio'}
-        </Button>
         </div>
       </main>
+
+      {/* Modal de Termos e Condições */}
+      {showTermos && <TermosModal
+        regrasAceitas={regrasAceitas}
+        onAccept={() => { setRegrasAceitas(true); setShowTermos(false) }}
+        onClose={() => setShowTermos(false)}
+        onSubmit={() => { setRegrasAceitas(true); setShowTermos(false); setTimeout(() => handleSubmit(true), 100) }}
+        loading={loading}
+      />}
+
       <BottomNav />
       <Toast message={toast.msg} visible={toast.visible} />
     </>
+  )
+}
+
+// ==================== Modal de Termos e Condições ====================
+
+function TermosModal({ regrasAceitas, onAccept, onClose, onSubmit, loading }: {
+  regrasAceitas: boolean
+  onAccept: () => void
+  onClose: () => void
+  onSubmit: () => void
+  loading: boolean
+}) {
+  const [aceito, setAceito] = useState(regrasAceitas)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  const termos = [
+    {
+      titulo: 'Natureza da plataforma',
+      texto: 'Declaro que compreendo que a mostraLY é uma vitrine de classificados e não uma loja, marketplace ou intermediadora de vendas. A mostraLY não compra, vende, guarda, envia ou garante nenhuma peça anunciada.',
+    },
+    {
+      titulo: 'Taxa de publicação, não comissão',
+      texto: 'Declaro que o valor pago (R\u00a0$\u00a030,00) é uma taxa de publicação pelo serviço de exibição do anúncio por 30 dias, e não uma comissão sobre venda. O pagamento não garante que a peça será vendida.',
+    },
+    {
+      titulo: 'Responsabilidade pelo conteúdo',
+      texto: 'Declaro que sou o legítimo proprietário da peça anunciada e que todas as informações fornecidas — fotos, descrição, preço, medidas e tamanho — são verdadeiras. Assumo total responsabilidade civil e criminal pelo conteúdo publicado.',
+    },
+    {
+      titulo: 'Negociação direta',
+      texto: 'Declaro que entendo que toda negociação, combinação de pagamento, entrega e troca ocorre exclusivamente entre mim e o comprador, via WhatsApp ou outro canal de minha escolha, sem qualquer participação ou responsabilidade da mostraLY.',
+    },
+    {
+      titulo: 'Proibição de conteúdo ilícito',
+      texto: 'Declaro que não estou anunciando produtos falsificados, roubados, furtados, ou que violem direitos autorais, marcas registradas ou qualquer legislação vigente. Estou ciente de que a mostraLY pode remover o anúncio a qualquer momento em caso de suspeita de irregularidade, sem devolução da taxa paga.',
+    },
+    {
+      titulo: 'Identificação',
+      texto: 'Declaro que meu nome, sobrenome e o número de WhatsApp informados são reais, e podem ser usados para identificação em caso de necessidade legal. Estou ciente de que a mostraLY poderá fornecer meus dados às autoridades competentes mediante ordem judicial.',
+    },
+    {
+      titulo: 'LGPD — Dados pessoais',
+      texto: 'Declaro que li e aceito a Política de Privacidade da mostraLY. Autorizo o armazenamento do meu número de WhatsApp e das fotos enviadas exclusivamente para fins de publicação do anúncio. Sei que posso solicitar a exclusão dos meus dados a qualquer momento pelo canal de contato da plataforma, nos termos da Lei nº 13.709/2018 (LGPD).',
+    },
+  ]
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-cream w-full max-w-md rounded-2xl flex flex-col max-h-[80vh]">
+        {/* Header fixo */}
+        <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0 border-b border-gold/20">
+          <h2 className="font-cormorant text-xl font-light text-ink">Termos e Condições</h2>
+          <button onClick={onClose} className="text-2xl text-muted hover:text-ink transition">✕</button>
+        </div>
+
+        {/* Conteúdo scrollável */}
+        <div className="overflow-y-auto overscroll-contain px-6 py-5 flex-1 min-h-0">
+          <div className="space-y-5">
+            {termos.map((t, i) => (
+              <div key={i}>
+                <h3 className="font-dm text-[13px] font-semibold text-ink mb-1.5">{t.titulo}</h3>
+                <p className="font-dm text-[12px] text-muted leading-relaxed">{t.texto}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer fixo: checkbox + botão */}
+        <div className="p-6 pt-4 flex-shrink-0 border-t border-gold/20">
+          <label className="flex items-start gap-3 cursor-pointer p-3 hover:bg-gold/5 rounded-[2px] transition-colors border border-gold/20 mb-4">
+            <input
+              type="checkbox"
+              checked={aceito}
+              onChange={e => setAceito(e.target.checked)}
+              className="w-5 h-5 mt-0.5 flex-shrink-0 cursor-pointer accent-gold"
+            />
+            <span className="font-dm text-[12px] text-muted leading-relaxed">
+              Declaro que li, compreendi e aceito integralmente todos os termos acima.
+            </span>
+          </label>
+
+          <button
+            onClick={() => { if (aceito) onSubmit() }}
+            disabled={!aceito || loading}
+            className={`w-full py-4 rounded-[2px] font-dm text-[13px] font-medium tracking-wider uppercase transition-colors ${
+              aceito && !loading
+                ? 'bg-ink text-cream hover:bg-ink/90'
+                : 'bg-ink/30 text-cream/50 cursor-not-allowed'
+            }`}
+          >
+            {loading ? 'Enviando…' : 'Aceitar termos e condições'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

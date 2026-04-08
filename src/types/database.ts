@@ -3,6 +3,8 @@ export type AnuncioStatus = 'pendente' | 'ativo' | 'vendido' | 'removido'
 export interface Anuncio {
   id: string
   created_at: string
+  vendedor_nome: string
+  vendedor_sobrenome: string
   vendedor_whatsapp: string
   titulo: string
   descricao: string | null
@@ -34,6 +36,8 @@ export interface AnuncioFormData {
   descricao: string
   preco: number
   categoria: string
+  vendedor_nome: string
+  vendedor_sobrenome: string
   vendedor_whatsapp: string
   cidade: string
   estado: string

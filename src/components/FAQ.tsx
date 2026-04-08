@@ -14,28 +14,44 @@ export function FAQ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
 
   const faqs = [
     {
+      pergunta: 'O que é o MostraLY?',
+      resposta: 'O MostraLY é uma vitrine digital de moda onde você pode anunciar e vender roupas, acessórios e calçados de forma prática e segura. Nosso foco é conectar vendedores e compradores com curadoria de qualidade.',
+    },
+    {
       pergunta: 'Como publico um anúncio?',
-      resposta: 'Clique no ícone de dúvidas no cabeçalho, acesse "Anunciar" e preencha os dados do seu item. Sua postagem entrará em análise.',
+      resposta: 'Toque em "Anunciar" no menu inferior, preencha as informações do item (fotos, título, preço, descrição, tamanho, etc.), aceite os termos e envie. Seu anúncio passará por uma curadoria antes de ser publicado.',
     },
     {
-      pergunta: 'Quanto custa publicar?',
-      resposta: `Publicar é grátis! Cobramos apenas 30% quando seu item é vendido através da plataforma.`,
+      pergunta: 'Quanto custa anunciar?',
+      resposta: 'A taxa de anúncio é de R$ 30,00 por peça publicada. Essa taxa garante que seu item fique em destaque na vitrine com curadoria de qualidade. Não há comissão sobre a venda.',
     },
     {
-      pergunta: 'Como recebo o pagamento?',
-      resposta: 'Após a venda, o comprador entra em contato pelo WhatsApp. Você combina a forma de pagamento (PIX, dinheiro, etc).',
+      pergunta: 'O que é a curadoria?',
+      resposta: 'Toda peça enviada passa por uma análise da nossa equipe. Verificamos qualidade das fotos, descrição, estado do item e adequação ao estilo da plataforma. Isso garante uma experiência premium para compradores e vendedores.',
     },
     {
-      pergunta: 'Que tipos de peças posso vender?',
-      resposta: 'Vestuário em geral: vestidos, blusas, calças, casacos, saias, conjuntos e acessórios. Todas devem estar em bom estado.',
+      pergunta: 'Como funciona a venda?',
+      resposta: 'Quando um comprador se interessa pelo seu item, ele entra em contato diretamente pelo seu WhatsApp. Vocês combinam forma de pagamento (PIX, dinheiro, etc.) e entrega/retirada entre si.',
     },
     {
-      pergunta: 'Meu anúncio foi rejeitado, por quê?',
-      resposta: 'Pode ser: foto de má qualidade, preço desproporcionado, descrição incompleta ou item fora de categoria. Tente novamente!',
+      pergunta: 'Meu anúncio foi rejeitado. O que fazer?',
+      resposta: 'Os motivos mais comuns são: fotos com baixa qualidade ou iluminação ruim, descrição incompleta, preço incompatível com o mercado ou item fora das categorias aceitas. Corrija os pontos e envie novamente!',
     },
     {
-      pergunta: 'Posso adicionar fotos e vídeos?',
-      resposta: 'Sim! Adicione múltiplas fotos e vídeos para mostrar melhor seu item. Quanto melhor a visualização, mais rápido vende.',
+      pergunta: 'Posso enviar fotos e vídeos?',
+      resposta: 'Sim! Você pode adicionar até 5 fotos e 1 vídeo de até 30 segundos. Quanto melhor a apresentação visual, maiores as chances de venda. Dica: use luz natural e fundo neutro.',
+    },
+    {
+      pergunta: 'Quais tipos de peças são aceitas?',
+      resposta: 'Aceitamos vestuário feminino e masculino (vestidos, blusas, calças, casacos, saias, conjuntos), calçados e acessórios (bolsas, bijuterias, cintos). Todas as peças devem estar em bom estado de conservação.',
+    },
+    {
+      pergunta: 'Como recebo meu pagamento?',
+      resposta: 'A negociação é feita diretamente entre vendedor e comprador via WhatsApp. Você combina a forma de pagamento que preferir (PIX, transferência, dinheiro na retirada). O MostraLY não intermedia pagamentos.',
+    },
+    {
+      pergunta: 'Meu WhatsApp fica visível para todos?',
+      resposta: 'Seu WhatsApp só aparece para compradores interessados quando eles clicam no botão de contato dentro do anúncio. Seus dados são armazenados de forma segura no nosso banco de dados.',
     },
   ]
 

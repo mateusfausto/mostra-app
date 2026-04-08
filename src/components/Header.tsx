@@ -12,7 +12,7 @@ export default function Header() {
       <div className="max-w-[480px] mx-auto flex items-center justify-between h-14">
         <Link href="/"
           className="font-cormorant text-xl font-light tracking-[0.18em] uppercase text-ink">
-          MostraLY <span className="text-gold">!</span>
+          MostraLY<span className="text-gold">!</span>
         </Link>
         <div className="flex items-center gap-3">
           <FAQButton />

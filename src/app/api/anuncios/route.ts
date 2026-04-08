@@ -32,11 +32,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const { titulo, descricao, preco, categoria, vendedor_whatsapp,
-            fotos, tamanho, regras_aceitas, cidade, estado } = body
+    const { titulo, descricao, preco, categoria, vendedor_nome, vendedor_sobrenome,
+            vendedor_whatsapp, fotos, tamanho, regras_aceitas, cidade, estado } = body
 
-    if (!titulo || !preco || !categoria || !vendedor_whatsapp || !cidade || !estado) {
+    if (!titulo || !preco || !categoria || !vendedor_whatsapp || !cidade || !estado || !vendedor_nome || !vendedor_sobrenome) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes' }, { status: 400 })
+    }
+
+    if (!fotos || !Array.isArray(fotos) || fotos.length < 4) {
+      return NextResponse.json({ error: 'Envie ao menos 4 fotos ou vídeos' }, { status: 400 })
     }
 
     const newAnuncio = await addAnuncio({
@@ -44,6 +48,8 @@ export async function POST(request: Request) {
       descricao: descricao || null,
       preco: Number(preco),
       categoria,
+      vendedor_nome: vendedor_nome.trim(),
+      vendedor_sobrenome: vendedor_sobrenome.trim(),
       vendedor_whatsapp: vendedor_whatsapp.replace(/\D/g, ''),
       fotos: fotos || [],
       status: 'pendente',
