@@ -20,13 +20,13 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Mostra!',
+  title: 'MOSTRALY!',
   description: 'Peças de vestuário selecionadas com curadoria. Qualidade premium, preços honestos.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Désapego VIP',
+    title: 'MOSTRALY!',
   },
   icons: {
     icon: '/icon-192.png',

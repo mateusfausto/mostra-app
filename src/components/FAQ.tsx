@@ -12,10 +12,14 @@ export function FAQ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
+  const MostraLY = () => (
+    <span className="font-cormorant tracking-[0.18em] uppercase">MostraLY<span className="text-gold">!</span></span>
+  )
+
   const faqs = [
     {
-      pergunta: 'O que é o MostraLY?',
-      resposta: 'O MostraLY é uma vitrine digital de moda onde você pode anunciar e vender roupas, acessórios e calçados de forma prática e segura. Nosso foco é conectar vendedores e compradores com curadoria de qualidade.',
+      pergunta: 'O que é a MOSTRALY?',
+      resposta: <><MostraLY /> é uma vitrine digital de moda onde você pode anunciar e vender roupas, acessórios e calçados de forma prática e segura. Nosso foco é conectar vendedores e compradores com curadoria de qualidade.</>,
     },
     {
       pergunta: 'Como publico um anúncio?',
@@ -47,7 +51,7 @@ export function FAQ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
     },
     {
       pergunta: 'Como recebo meu pagamento?',
-      resposta: 'A negociação é feita diretamente entre vendedor e comprador via WhatsApp. Você combina a forma de pagamento que preferir (PIX, transferência, dinheiro na retirada). O MostraLY não intermedia pagamentos.',
+      resposta: <>A negociação é feita diretamente entre vendedor e comprador via WhatsApp. Você combina a forma de pagamento que preferir (PIX, transferência, dinheiro na retirada). A <MostraLY /> não intermedia pagamentos.</>,
     },
     {
       pergunta: 'Meu WhatsApp fica visível para todos?',

@@ -86,10 +86,7 @@ export default function ProductCard({ anuncio, onClick, delay = 0 }: Props) {
       </div>
 
       {/* Body */}
-      <div className="p-3">
-        <p className="font-dm text-[10px] tracking-[0.15em] uppercase text-gold mb-1">
-          {catLabel[anuncio.categoria] ?? anuncio.categoria}
-        </p>
+      <div className="p-3">        
         <h3 className="font-cormorant text-[15px] font-normal leading-snug text-ink mb-2
           line-clamp-2">
           {anuncio.titulo}

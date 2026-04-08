@@ -134,7 +134,7 @@ export default function AnunciarPage() {
         preco: parseFloat(form.preco.replace(/\./g, '').replace(',', '.')),
         fotos: fotoUrls,
         tamanho: tamanhoSelecionado,
-        regras_aceitas: regrasAceitas,
+        regras_aceitas: skipTermosCheck || regrasAceitas,
       }
 
       console.log('[ANUNCIO SUBMIT] Enviando:', payload)
@@ -191,19 +191,7 @@ export default function AnunciarPage() {
               <p className="font-dm text-[12px] text-muted mt-2 mb-0">
                 Em breve entraremos em contato com você via WhatsApp para confirmar o pagamento e ativar sua peça na vitrine!
               </p>
-            </div>
-
-            <div className="text-left space-y-2 mb-6">
-              <p className="font-dm text-xs text-muted">
-                ✓ Fotos verificadas
-              </p>
-              <p className="font-dm text-xs text-muted">
-                ✓ Informações validadas
-              </p>
-              <p className="font-dm text-xs text-muted">
-                ⏳ Aguardando confirmação de pagamento
-              </p>
-            </div>
+            </div>           
 
             <Button variant="dark" fullWidth onClick={resetForm}>
               Fazer outro anúncio
@@ -227,7 +215,7 @@ export default function AnunciarPage() {
           />
           <div className="max-w-[480px] mx-auto relative">
             <p className="font-dm text-[10px] tracking-[0.3em] uppercase text-gold mb-3">
-              ✦ Compartilhe seu estilo
+              ✦ Crie seu anúncio
             </p>
             <h1 className="font-cormorant text-5xl font-light leading-[1.08] text-cream">
               Sua peça<br />encontrará o{' '}
@@ -365,14 +353,24 @@ export default function AnunciarPage() {
         {/* Termos e Envio */}
         <div className="mb-6">
           {regrasAceitas ? (
-            <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-[2px]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-green-600 flex-shrink-0">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-              </svg>
-              <span className="font-dm text-[13px] text-green-700">Termos aceitos</span>
-              <button onClick={() => { setRegrasAceitas(false); setShowTermos(true) }}
-                className="ml-auto font-dm text-[11px] text-green-600 underline">Rever termos</button>
-            </div>
+            loading ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <svg className="animate-spin h-8 w-8 text-ink mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="font-dm text-[13px] text-muted">Enviando seu anúncio...</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-[2px]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-green-600 flex-shrink-0">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span className="font-dm text-[13px] text-green-700">Termos aceitos</span>
+                <button onClick={() => { setRegrasAceitas(false); setShowTermos(true) }}
+                  className="ml-auto font-dm text-[11px] text-green-600 underline">Rever termos</button>
+              </div>
+            )
           ) : (
             <button
               type="button"
@@ -393,13 +391,6 @@ export default function AnunciarPage() {
             >
               Ler termos e enviar anúncio
             </button>
-          )}
-
-          {regrasAceitas && (
-            <Button variant="dark" fullWidth className="py-4 text-[13px]"
-              onClick={() => handleSubmit()} disabled={loading}>
-              {loading ? 'Enviando…' : 'Enviar anúncio'}
-            </Button>
           )}
         </div>
 
@@ -437,10 +428,14 @@ function TermosModal({ regrasAceitas, onAccept, onClose, onSubmit, loading }: {
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  const MostraLY = () => (
+    <span className="font-cormorant tracking-[0.18em] uppercase">MostraLY<span className="text-gold">!</span></span>
+  )
+
   const termos = [
     {
       titulo: 'Natureza da plataforma',
-      texto: 'Declaro que compreendo que a mostraLY é uma vitrine de classificados e não uma loja, marketplace ou intermediadora de vendas. A mostraLY não compra, vende, guarda, envia ou garante nenhuma peça anunciada.',
+      texto: <>Declaro que compreendo que a <MostraLY /> é uma vitrine de classificados e não uma loja, marketplace ou intermediadora de vendas. A <MostraLY /> não compra, vende, guarda, envia ou garante nenhuma peça anunciada.</>,
     },
     {
       titulo: 'Taxa de publicação, não comissão',
@@ -452,19 +447,19 @@ function TermosModal({ regrasAceitas, onAccept, onClose, onSubmit, loading }: {
     },
     {
       titulo: 'Negociação direta',
-      texto: 'Declaro que entendo que toda negociação, combinação de pagamento, entrega e troca ocorre exclusivamente entre mim e o comprador, via WhatsApp ou outro canal de minha escolha, sem qualquer participação ou responsabilidade da mostraLY.',
+      texto: <>Declaro que entendo que toda negociação, combinação de pagamento, entrega e troca ocorre exclusivamente entre mim e o comprador, via WhatsApp ou outro canal de minha escolha, sem qualquer participação ou responsabilidade da <MostraLY />.</>,
     },
     {
       titulo: 'Proibição de conteúdo ilícito',
-      texto: 'Declaro que não estou anunciando produtos falsificados, roubados, furtados, ou que violem direitos autorais, marcas registradas ou qualquer legislação vigente. Estou ciente de que a mostraLY pode remover o anúncio a qualquer momento em caso de suspeita de irregularidade, sem devolução da taxa paga.',
+      texto: <>Declaro que não estou anunciando produtos falsificados, roubados, furtados, ou que violem direitos autorais, marcas registradas ou qualquer legislação vigente. Estou ciente de que a <MostraLY /> pode remover o anúncio a qualquer momento em caso de suspeita de irregularidade, sem devolução da taxa paga.</>,
     },
     {
       titulo: 'Identificação',
-      texto: 'Declaro que meu nome, sobrenome e o número de WhatsApp informados são reais, e podem ser usados para identificação em caso de necessidade legal. Estou ciente de que a mostraLY poderá fornecer meus dados às autoridades competentes mediante ordem judicial.',
+      texto: <>Declaro que meu nome, sobrenome e o número de WhatsApp informados são reais, e podem ser usados para identificação em caso de necessidade legal. Estou ciente de que a <MostraLY /> poderá fornecer meus dados às autoridades competentes mediante ordem judicial.</>,
     },
     {
       titulo: 'LGPD — Dados pessoais',
-      texto: 'Declaro que li e aceito a Política de Privacidade da mostraLY. Autorizo o armazenamento do meu número de WhatsApp e das fotos enviadas exclusivamente para fins de publicação do anúncio. Sei que posso solicitar a exclusão dos meus dados a qualquer momento pelo canal de contato da plataforma, nos termos da Lei nº 13.709/2018 (LGPD).',
+      texto: <>Declaro que li e aceito a Política de Privacidade da <MostraLY />. Autorizo o armazenamento do meu número de WhatsApp e das fotos enviadas exclusivamente para fins de publicação do anúncio. Sei que posso solicitar a exclusão dos meus dados a qualquer momento pelo canal de contato da plataforma, nos termos da Lei nº 13.709/2018 (LGPD).</>,
     },
   ]
 
