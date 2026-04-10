@@ -68,7 +68,7 @@ export default function HomePage() {
               ✦ Curadoria exclusiva
             </p>
             <h1 className="font-cormorant text-5xl font-light leading-[1.08] text-cream">
-              Peças que<br />merecem um{' '}
+              Peças que<br />merecem um{' '}<br />
               <em className="italic text-gold-light">novo lar</em>
             </h1>
             <p className="mt-4 font-dm text-[13px] font-light leading-relaxed text-cream/60 max-w-[280px]">

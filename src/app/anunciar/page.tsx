@@ -320,7 +320,7 @@ export default function AnunciarPage() {
             {['PP', 'P', 'M', 'G', 'GG', 'XG', '36', '38', '40', '42', '44', '46'].map(tam => (
               <label key={tam} className={`flex items-center justify-center p-3 border rounded-[2px] cursor-pointer transition-all ${
                 tamanhoSelecionado === tam
-                  ? 'border-gold bg-gold/20 text-gold font-medium'
+                  ? 'border-dark bg-gold/40 text-dark font-medium'
                   : 'border-gold/30 hover:bg-gold/5 text-ink'
               }`}>
                 <input

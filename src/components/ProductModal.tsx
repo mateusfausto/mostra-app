@@ -70,6 +70,17 @@ export default function ProductModal({ anuncio, onClose, hideWhatsApp = false }:
     setIsFavorite(!isFavorite)
   }
 
+  function handleShare() {
+    if (!anuncio) return
+    const url = window.location.origin
+    const text = `${anuncio.titulo} - R$ ${formatMoney(anuncio.preco)} na MOSTRALY!`
+    if (navigator.share) {
+      navigator.share({ title: anuncio.titulo, text, url }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(`${text} ${url}`)
+    }
+  }
+
   function nextImage() {
     setCurrentImageIndex((prev) => (prev + 1) % fotos.length)
   }
@@ -84,16 +95,26 @@ export default function ProductModal({ anuncio, onClose, hideWhatsApp = false }:
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-[480px] mx-auto bg-white rounded-t-2xl
-        max-h-[92vh] overflow-y-auto animate-slide-up">
+        max-h-[92vh] flex flex-col animate-slide-up">
         {/* Handle */}
-        <div className="w-10 h-1 rounded-full bg-black/15 mx-auto mt-3" />
+        <div className="w-10 h-1 rounded-full bg-black/15 mx-auto mt-3 flex-shrink-0" />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-0">
-          <span className="font-dm text-[11px] tracking-[0.2em] uppercase text-gold">
+        <div className="flex items-center justify-between px-5 pt-4 pb-0 flex-shrink-0">
+          <span className="font-dm text-[16px] tracking-[0.2em] uppercase text-gold">
             {catLabel[anuncio.categoria] ?? anuncio.categoria}
           </span>
           <div className="flex gap-2">
+            <button
+              onClick={handleShare}
+              className="w-8 h-8 rounded-full bg-warm flex items-center justify-center
+                hover:bg-warm/80 transition-colors"
+              title="Compartilhar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-muted">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+              </svg>
+            </button>
             <button
               onClick={toggleFavorite}
               className="w-8 h-8 rounded-full bg-warm flex items-center justify-center
@@ -116,6 +137,7 @@ export default function ProductModal({ anuncio, onClose, hideWhatsApp = false }:
           </div>
         </div>
 
+        <div className="overflow-y-auto flex-1 min-h-0">
         <div className="px-5 pb-8">
           {/* Gallery com Carrossel */}
           <div className="relative aspect-[4/5] rounded-[2px] overflow-hidden bg-warm mt-3 mb-4">
@@ -222,13 +244,14 @@ export default function ProductModal({ anuncio, onClose, hideWhatsApp = false }:
                 hover:bg-[#20bd5a] transition-colors
               "
             >
-              Tenho interesse! Chamar no WhatsApp
+              Quero! Chamar no WhatsApp
             </a>
           )}
 
           <p className="text-center font-dm text-[11px] text-muted mt-3">
             Anúncio expira em {daysLeft(anuncio.data_expiracao)}
           </p>
+        </div>
         </div>
       </div>
     </div>
